@@ -5,8 +5,8 @@
   [x]
   (println x "Hello, World!"))
 
-(defn example-handler [request]
-  {:body "Hello Clojure!"})
+(defn example-handler [{:keys [uri] :as req}]
+  {:body (str "URI is " uri)})
 
 (defn on-init []
   (println "Initializing sample web app!"))
