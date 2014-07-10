@@ -11,6 +11,6 @@
 
   :plugins [[lein-ring "0.8.11"]]
 
-  :ring {:handler clojure-webapp.core/wrapper-handler
+  :ring {:handler clojure-webapp.core/full-handler
          :init clojure-webapp.core/on-init
          :destroy clojure-webapp.core/on-destroy})

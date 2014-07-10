@@ -1,10 +1,10 @@
 (ns clojure-webapp.core
   (:require [clojure-webapp.handlers :as handlers]) )
 
-(defn foo
-  "I don't do a whole lot."
-  [x]
-  (println x "Hello, World!"))
+(defn simple-log-middleware [handler]
+  (fn [{:keys [uri] :as request}]
+    (println "Request Path " uri)
+    (handler request)))
 
 (defn example-handler [request]
   {:headers {"Location" "https://github.com/robinsonraju/clojure-webapp"
@@ -39,3 +39,6 @@
   (catch Throwable e
     {:status 500 :body (apply str (interpose "/n" (.getStackTrace e)))}))
   )
+
+(def full-handler
+  (simple-log-middleware wrapper-handler))
