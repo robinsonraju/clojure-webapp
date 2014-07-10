@@ -18,6 +18,7 @@
   (println "Closing sample web app."))
 
 (defn test1-handler [request]
+  (throw (RuntimeException. "error!"))
   {:body "test1"})
 
 (defn test2-handler [request]
@@ -29,3 +30,12 @@
     "/test2" (test2-handler request)
     "/test3" (handlers/test3-handler request)
     nil))
+
+(defn wrapper-handler [request]
+  (try
+  (if-let [resp (route-handler request)]
+    resp
+    {:status 404 :body (str "Not found " (:uri request))})
+  (catch Throwable e
+    {:status 500 :body (apply str (interpose "/n" (.getStackTrace e)))}))
+  )
