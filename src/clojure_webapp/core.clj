@@ -1,5 +1,16 @@
 (ns clojure-webapp.core
-  (:require [clojure-webapp.handlers :as handlers]) )
+  (:require [clojure-webapp.handlers :as handlers]
+            [clojure.string]) )
+
+(defn case-middleware [handler request]
+  (let [request (update-in request [:uri] clojure.string/lower-case)
+        response (handler request)]
+    (if (string? (:body response))
+      (update-in response [:body] clojure.string/capitalize)
+      response)))
+
+(defn wrap-case-middleware [handler]
+  (fn [request] (case-middleware handler request)))
 
 (defn exception-middleware-fn [handler request]
   (try (handler request)
@@ -58,6 +69,7 @@
 
 (def full-handler
   (-> route-handler
-   not-found-middleware
-   wrap-exception-middleware
-   simple-log-middleware))
+      not-found-middleware
+      wrap-case-middleware
+      wrap-exception-middleware
+      simple-log-middleware))
