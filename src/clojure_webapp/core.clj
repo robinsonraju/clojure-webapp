@@ -6,7 +6,9 @@
   (println x "Hello, World!"))
 
 (defn example-handler [request]
-  {:body (java.io.File. "test.txt")})
+  {:headers {"Location" "https://github.com/robinsonraju/clojure-webapp"
+             "Set-cookie" "test=1"}
+   :status 301})
 
 (defn on-init []
   (println "Initializing sample web app!"))
