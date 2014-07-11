@@ -6,6 +6,8 @@
             [ring.middleware.keyword-params]
             [ring.middleware.multipart-params]
             [ring.middleware.cookies]
+            [ring.middleware.session]
+            [ring.middleware.session.memory]
             [clojure-webapp.html :as html]
             [clojure.string]))
 
@@ -78,10 +80,22 @@
            [:p "Cookies:"]
            [:pre (:cookies request)]])})
 
+(defn session-handler [request]
+  {:body (layout
+          [:div
+           [:p "Session:"]
+           [:pre (:session request)]])})
+
+(defn logout-handler [request]
+  {:body "logged out"
+   :session nil})
+
 (defn form-handler [request]
  {:status 200
   :headers {"Content-type" "text/html"}
   :cookies {:username (:login (:params request))}
+  :session {:username (:login (:params request))
+            :cnt (inc (or (:cnt (:session request)) 0))}
   :body (layout
          [:div
           [:p "Params:"]
@@ -103,6 +117,8 @@
     "/test3" (handlers/test3-handler request)
     "/form"  (form-handler request)
     "/cookies" (cookie-handler request)
+    "/session" (session-handler request)
+    "/logout" (logout-handler request)
     nil))
 
 (defn wrapping-handler [request]
@@ -123,5 +139,11 @@
      ring.middleware.keyword-params/wrap-keyword-params
      ring.middleware.params/wrap-params
      ring.middleware.multipart-params/wrap-multipart-params
+     (ring.middleware.session/wrap-session
+      {:cookie-name "ring-session"
+       :root "/"
+       :cookie-attrs {:max-age 600
+                      :secure false}
+       :store (ring.middleware.session.memory/memory-store)})
      ring.middleware.cookies/wrap-cookies
      simple-log-middleware))
