@@ -2,33 +2,35 @@
   (:require
    [clojure.data.json :as json]
    [clojure.walk :as walk]
-   [clojure-webapp.route :as route]))
-
-(defonce BLOG (atom {}))
-
-(defonce ID (atom 0))
+   [clojure.java.jdbc :as jdbc]
+   [clojure-webapp.route :as route]
+   [clojure-webapp.db :as db]))
 
 (defn get-blog-entries []
-  (sort-by :id (vals @BLOG)))
+  (jdbc/query db/postgresql-db
+              ["SELECT id, title, body FROM entries"]))
 
 (defn add-blog-entry [entry]
-  (let [id (swap! ID inc)]
-    (get (swap! BLOG assoc id (assoc entry :id id)) id)))
+  (jdbc/db-transaction [database db/postgresql-db]
+                       (jdbc/insert! database :entries (select-keys entry [:title :body]))))
 
 (defn get-blog-entry [id]
-  (get @BLOG id))
+  (first (jdbc/query db/postgresql-db
+                     ["SELECT id, title, body FROM entries WHERE id=?" id])))
 
 (defn update-blog-entry [id entry]
-  (when (get-blog-entry id)
-    (get (swap! BLOG assoc id entry) id)))
+  (jdbc/db-transaction [database db/postgresql-db]
+                       (jdbc/update! database :entries
+                                     (select-keys entry [:title :body])))
+  (get-blog-entry id))
 
 (defn alter-blog-entry [id entry-values]
-  (when (get-blog-entry id)
-    (get (swap! BLOG update-in [id] merge entry-values) id)))
+  (update-blog-entry id entry-values))
 
 (defn delete-blog-entry [id]
   (when (get-blog-entry id)
-    (swap! BLOG dissoc id)
+    (jdbc/db-transaction [database db/postgresql-db]
+                         (jdbc/delete! database :entries ["id=?" id]))
     {:id id}))
 
 (defn json-response [data]
@@ -39,6 +41,15 @@
 (defn json-body [request]
   (walk/keywordize-keys
    (json/read-str (slurp (:body request)))))
+
+(defn json-error-handler [handler]
+  (fn [request]
+    (try
+      (handler request)
+      (catch Throwable throwable
+        (assoc (json-response {:message (.getMessage throwable)
+                               :stacktrace (map str (.getStackTrace throwable))})
+          :status 500)))))
 
 (defn get-id [request]
   (Long/parseLong (-> request :route-params :id)))
@@ -64,6 +75,7 @@
    (route/with-route-matches :post "/entries" post-handler)
    (route/with-route-matches :get "/entries/:id" get-entry-handler)
    (route/with-route-matches :put "/entries/:id" put-handler)
-   (route/with-route-matches :delete "/entries/:id" delete-handler)))
+   (route/with-route-matches :delete "/entries/:id" delete-handler)
+   json-error-handler))
 
 
