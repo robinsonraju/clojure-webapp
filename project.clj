@@ -10,7 +10,7 @@
                  [ring "1.3.0"]
                  [org.clojure/data.json "0.2.5"]
                  [org.postgresql/postgresql "9.3-1101-jdbc41"]
-                 [org.clojure/java.jdbc "0.3.4"]]
+                 [korma "0.3.2"]]
 
   :plugins [[lein-ring "0.8.11"]]
 

@@ -4,24 +4,24 @@
    [clojure.walk :as walk]
    [clojure.java.jdbc :as jdbc]
    [clojure-webapp.route :as route]
-   [clojure-webapp.db :as db]))
+   [clojure-webapp.db :as db]
+   [korma.core :as korma]))
 
 (defn get-blog-entries []
-  (jdbc/query db/postgresql-db
-              ["SELECT id, title, body FROM entries"]))
+  (korma/select db/entries))
 
 (defn add-blog-entry [entry]
-  (jdbc/db-transaction [database db/postgresql-db]
-                       (jdbc/insert! database :entries (select-keys entry [:title :body]))))
+  (korma/insert db/entries
+                (korma/values (select-keys entry [:title :body]))))
 
 (defn get-blog-entry [id]
-  (first (jdbc/query db/postgresql-db
-                     ["SELECT id, title, body FROM entries WHERE id=?" id])))
+  (first (korma/select db/entries
+                       (korma/where {:id id}))))
 
 (defn update-blog-entry [id entry]
-  (jdbc/db-transaction [database db/postgresql-db]
-                       (jdbc/update! database :entries
-                                     (select-keys entry [:title :body])))
+  (korma/update db/entries
+                (korma/set-fields (select-keys entry [:title :body]))
+                (korma/where {:id id}))
   (get-blog-entry id))
 
 (defn alter-blog-entry [id entry-values]
@@ -29,8 +29,7 @@
 
 (defn delete-blog-entry [id]
   (when (get-blog-entry id)
-    (jdbc/db-transaction [database db/postgresql-db]
-                         (jdbc/delete! database :entries ["id=?" id]))
+    (korma/delete db/entries (korma/where {:id id}))
     {:id id}))
 
 (defn json-response [data]
